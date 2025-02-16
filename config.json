@@ -1,0 +1,6 @@
+{
+  "database": {
+    "remote": "http://localhost:3001/",
+    "token": "do-you-like-this-token?"
+  }
+}
