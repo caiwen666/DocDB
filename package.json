@@ -1,8 +1,7 @@
 {
-  "name": "my-new-app",
-  "productName": "my-new-app",
+  "name": "docdb",
+  "productName": "docdb",
   "version": "1.0.0",
-  "description": "My Electron application description",
   "main": ".webpack/main",
   "scripts": {
     "start": "electron-forge start",
