@@ -14,7 +14,7 @@ export default function DialogErrorTemplate({
 	return (
 		<div className={classNames(className, "min-w-64")}>
 			<DialogContentText>{info}</DialogContentText>
-			<div className={"whitespace-break-spaces mt-2"}>
+			<div className={"whitespace-break-spaces mt-2 break-all"}>
 				{formatToString(error)}
 			</div>
 		</div>

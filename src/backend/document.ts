@@ -1,4 +1,9 @@
-import { Document, DocumentFromFile, DocumentInfo, SelectedDocument } from "../shared/types/document";
+import {
+	Document,
+	DocumentFromFile,
+	DocumentInfo,
+	SelectedDocument,
+} from "../shared/types/document";
 import { send } from "./api";
 import path from "path";
 import * as fs from "node:fs";
@@ -175,6 +180,7 @@ export const addDocument = async (docs: DocumentFromFile[]) => {
 	for (const item of docs) {
 		const { path, file, ...doc } = item;
 		const target = Path.join(cwd, "files", doc.md5 + ".pdf");
+		// TODO 如果这里文件读入除了差错，那么整个要导入的数据就丢失了，需要解决
 		await fs.promises.copyFile(path, target);
 		doc.id = startID;
 		Database.data.push(doc);

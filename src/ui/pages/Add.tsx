@@ -267,11 +267,12 @@ export default function Add() {
 						callback: resolve,
 					});
 				});
-				if (op === "继续") {
-					if (item.info.date.year === -1) item.info.date = undefined;
-					readyDocuments.push(item);
+				if (op === "取消") {
+					continue;
 				}
 			}
+			if (item.info.date.year === -1) item.info.date = undefined;
+			readyDocuments.push(item);
 		}
 		setDocuments(remainDocuments);
 		documentsRef.current = remainDocuments;
