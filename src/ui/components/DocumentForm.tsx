@@ -21,11 +21,11 @@ import {
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 
 export default function DocumentForm({
-																			 form,
-																			 onChange,
-																			 onValid,
-																			 className = "",
-																		 }: {
+	form,
+	onChange,
+	onValid,
+	className = "",
+}: {
 	form: DocumentInfo;
 	onChange: (form: DocumentInfo) => void;
 	onValid: (v: boolean) => void;

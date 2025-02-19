@@ -29,14 +29,14 @@ import DialogBarProgressTemplate from "../components/dialog/DialogBarProgressTem
 import { invoke } from "../api";
 
 const Item = ({
-								selected,
-								onSelect,
-								onChange,
-								formColor,
-								formDouble,
-								formCount,
-								info,
-							}: {
+	selected,
+	onSelect,
+	onChange,
+	formColor,
+	formDouble,
+	formCount,
+	info,
+}: {
 	selected: boolean;
 	onSelect?: () => void;
 	onChange: (color: boolean, double: boolean, count: number) => void;
@@ -191,8 +191,14 @@ export default function Checked() {
 		}
 		pushWaitingDialog({
 			title: "取回",
-			content: <DialogContent><DialogBarProgressTemplate info={"正在取回"}
-																												 event={"onFetchBackProgressUpdated"} /></DialogContent>,
+			content: (
+				<DialogContent>
+					<DialogBarProgressTemplate
+						info={"正在取回"}
+						event={"onFetchBackProgressUpdated"}
+					/>
+				</DialogContent>
+			),
 		});
 		const result = await invoke("fetchBack", target);
 		closeWaitingDialog();
@@ -231,8 +237,15 @@ export default function Checked() {
 			});
 			if (colorTarget.length !== 0) {
 				pushWaitingDialog({
-					title: "取回", content: <DialogContent><DialogBarProgressTemplate info={"正在取回"}
-																																						event={"onFetchBackProgressUpdated"} /></DialogContent>,
+					title: "取回",
+					content: (
+						<DialogContent>
+							<DialogBarProgressTemplate
+								info={"正在取回"}
+								event={"onFetchBackProgressUpdated"}
+							/>
+						</DialogContent>
+					),
 				});
 				const result = await invoke("fetchBack", colorTarget);
 				closeWaitingDialog();

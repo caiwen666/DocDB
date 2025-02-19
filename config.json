@@ -1,6 +1,6 @@
 {
   "database": {
-    "remote": "http://localhost:3001/",
+    "remote": "https://doc.caiwen.work/",
     "token": "do-you-like-this-token?"
   }
 }

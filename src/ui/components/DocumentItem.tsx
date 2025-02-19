@@ -5,14 +5,14 @@ import AttachFileIcon from "@mui/icons-material/AttachFile";
 import { Document, DocumentInfo } from "../../shared/types/document";
 
 export default function DocumentItem({
-																			 onSelect,
-																			 selected,
-																			 ref,
-																			 variant = 0,
-																			 className = "",
-																			 info,
-																			 onDoubleClick,
-																		 }: {
+	onSelect,
+	selected,
+	ref,
+	variant = 0,
+	className = "",
+	info,
+	onDoubleClick,
+}: {
 	variant?: 0 | 1; //0:可勾选 1:文件展示
 	onSelect?: () => void;
 	selected?: boolean;

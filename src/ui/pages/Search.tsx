@@ -1,7 +1,9 @@
 import {
 	Checkbox,
 	Chip,
-	CircularProgress, DialogContent, DialogContentText,
+	CircularProgress,
+	DialogContent,
+	DialogContentText,
 	Divider,
 	FormControlLabel,
 	IconButton,
@@ -34,13 +36,13 @@ import DocumentItem from "../components/DocumentItem";
 import { ExportedCallback } from "../../shared/api";
 
 const ItemList = ({
-										className,
-										hasSelection,
-										selectionL,
-										selectionR,
-										list,
-										onRefresh,
-									}: {
+	className,
+	hasSelection,
+	selectionL,
+	selectionR,
+	list,
+	onRefresh,
+}: {
 	className: string;
 	hasSelection: boolean;
 	selectionL: number;
@@ -123,16 +125,21 @@ const ItemList = ({
 					});
 				});
 				if (op === "确定") {
-					(await invoke("updateDocument", target[0].id, form)).unwrap_or_else((e) => {
-						pushDialog({
-							title: "错误",
-							content: (
-								<DialogContent>
-									<DialogErrorTemplate info={"更新试卷信息时发生错误"} error={e} />
-								</DialogContent>
-							),
-						});
-					});
+					(await invoke("updateDocument", target[0].id, form)).unwrap_or_else(
+						(e) => {
+							pushDialog({
+								title: "错误",
+								content: (
+									<DialogContent>
+										<DialogErrorTemplate
+											info={"更新试卷信息时发生错误"}
+											error={e}
+										/>
+									</DialogContent>
+								),
+							});
+						},
+					);
 					onRefresh();
 				}
 			}
@@ -170,7 +177,10 @@ const ItemList = ({
 									title: "错误",
 									content: (
 										<DialogContent>
-											<DialogErrorTemplate info={"删除试卷时发生错误"} error={result.getError()} />
+											<DialogErrorTemplate
+												info={"删除试卷时发生错误"}
+												error={result.getError()}
+											/>
 										</DialogContent>
 									),
 									buttons: ["确定"],
@@ -210,7 +220,14 @@ const ItemList = ({
 				if (op === "继续") {
 					pushWaitingDialog({
 						title: "简单取回",
-						content: <DialogContent><DialogBarProgressTemplate event={"onFetchBackProgressUpdated"} info={"正在取回"} /></DialogContent>,
+						content: (
+							<DialogContent>
+								<DialogBarProgressTemplate
+									event={"onFetchBackProgressUpdated"}
+									info={"正在取回"}
+								/>
+							</DialogContent>
+						),
 					});
 					const result = await invoke("fetchBack", selected);
 					closeWaitingDialog();
@@ -351,7 +368,6 @@ const ItemList = ({
 	);
 };
 
-
 export default function Search() {
 	// dialog
 	const pushDialog = useDialogStore((state) => state.push);
@@ -486,10 +502,16 @@ export default function Search() {
 		_.debounce(async () => {
 			if (keywordRef.current.length !== 0) {
 				const startTime = new Date().getTime();
-				const result = (await invoke("searchDocument", keywordRef.current)).unwrap_or_else((e) => {
+				const result = (
+					await invoke("searchDocument", keywordRef.current)
+				).unwrap_or_else((e) => {
 					pushDialog({
 						title: "错误",
-						content: <DialogContent><DialogErrorTemplate info={"搜索时发生错误"} error={e} /></DialogContent>,
+						content: (
+							<DialogContent>
+								<DialogErrorTemplate info={"搜索时发生错误"} error={e} />
+							</DialogContent>
+						),
 					});
 					return [];
 				});

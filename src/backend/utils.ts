@@ -11,9 +11,7 @@ import fetch, { Response } from "node-fetch";
  * 获取文件的详细信息
  * @param pathStr 文件的绝对路径
  */
-export async function getFileDetail(
-	pathStr: string,
-): Promise<FileDetail> {
+export async function getFileDetail(pathStr: string): Promise<FileDetail> {
 	const pathObj = path.parse(pathStr);
 	const fileBuffer = await fs.promises.readFile(pathStr);
 	const hash = crypto.createHash("md5");
@@ -71,8 +69,11 @@ export const openFile = async (target: string) => {
 /**
  * 简单封装 http请求，自动添加 token 和请求地址
  */
-export const request = async (target: string, method: "POST" | "GET"): Promise<Response> => {
-	return await fetch(Config.settings + target, {
+export const request = async (
+	target: string,
+	method: "POST" | "GET",
+): Promise<Response> => {
+	return await fetch(Config.settings.database.remote + target, {
 		headers: {
 			Authorization: Config.settings.database.token,
 		},

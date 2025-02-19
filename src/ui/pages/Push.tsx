@@ -15,18 +15,19 @@ import TimelineDot from "@mui/lab/TimelineDot";
 import _ from "lodash";
 import dayjs from "dayjs";
 import DocumentItem from "../components/DocumentItem";
-import { formatToString } from "../../shared/utils";
 import { useDialogStore } from "../stores/dialog";
 import { Pages, usePageStore } from "../stores/page";
 import { TrackItemUI } from "../../shared/types/record";
-import { invoke, subscribe } from "../api";
+import { invoke } from "../api";
 import DialogErrorTemplate from "../components/dialog/DialogErrorTemplate";
 import DialogBarProgressTemplate from "../components/dialog/DialogBarProgressTemplate";
 
 export default function Push() {
 	const pushDialog = useDialogStore((state) => state.push);
 	const pushWaitingDialog = useDialogStore((state) => state.pushWaitingDialog);
-	const closeWaitingDialog = useDialogStore((state) => state.closeWaitingDialog);
+	const closeWaitingDialog = useDialogStore(
+		(state) => state.closeWaitingDialog,
+	);
 	const [track, setTrack] = useState<TrackItemUI[]>(null);
 	const [remoteVersion, setRemoteVersion] = useState("未获取");
 	const [localVersion, setLocalVersion] = useState("未获取");
@@ -88,8 +89,14 @@ export default function Push() {
 		try {
 			pushWaitingDialog({
 				title: "同步",
-				content: <DialogContent><DialogBarProgressTemplate info={"正在同步"}
-																													 event={"onDatabaseProgressUpdated"} /></DialogContent>,
+				content: (
+					<DialogContent>
+						<DialogBarProgressTemplate
+							info={"正在同步"}
+							event={"onDatabaseProgressUpdated"}
+						/>
+					</DialogContent>
+				),
 			});
 			(await invoke("pushDatabase")).unwrap();
 			(await invoke("pullDatabase")).unwrap();
@@ -98,22 +105,24 @@ export default function Push() {
 			pushDialog({
 				title: "成功",
 				content: (
-					<DialogContent>
+					<DialogContent className={"min-w-64"}>
 						<DialogContentText>同步成功</DialogContentText>
 					</DialogContent>
 				),
 			});
-			setTrack((await invoke("getTrack")).unwrap_or_else((e) => {
-				pushDialog({
-					title: "错误",
-					content: (
-						<DialogContent>
-							<DialogErrorTemplate info={"获取修改记录失败"} error={e} />
-						</DialogContent>
-					),
-				});
-				return [];
-			}));
+			setTrack(
+				(await invoke("getTrack")).unwrap_or_else((e) => {
+					pushDialog({
+						title: "错误",
+						content: (
+							<DialogContent>
+								<DialogErrorTemplate info={"获取修改记录失败"} error={e} />
+							</DialogContent>
+						),
+					});
+					return [];
+				}),
+			);
 			invoke("getDatabaseVersion").then((v) => {
 				setLocalVersion(v.unwrap());
 				localVersionRef.current = v.unwrap();
@@ -125,10 +134,7 @@ export default function Push() {
 				title: "错误",
 				content: (
 					<DialogContent>
-						<DialogContentText>同步失败</DialogContentText>
-						<div className={"whitespace-break-spaces mt-2"}>
-							{formatToString(e)}
-						</div>
+						<DialogErrorTemplate info={"同步失败"} error={e} />
 					</DialogContent>
 				),
 			});
@@ -137,17 +143,21 @@ export default function Push() {
 	useEffect(() => {
 		const init = () => {
 			setTrack(null);
-			invoke("getTrack").then((data) => setTrack(data.unwrap_or_else((e) => {
-				pushDialog({
-					title: "错误",
-					content: (
-						<DialogContent>
-							<DialogErrorTemplate info={"获取修改记录失败"} error={e} />
-						</DialogContent>
-					),
-				});
-				return [];
-			})));
+			invoke("getTrack").then((data) =>
+				setTrack(
+					data.unwrap_or_else((e) => {
+						pushDialog({
+							title: "错误",
+							content: (
+								<DialogContent className={"min-w-64"}>
+									<DialogErrorTemplate info={"获取修改记录失败"} error={e} />
+								</DialogContent>
+							),
+						});
+						return [];
+					}),
+				),
+			);
 			getRemoteVersion();
 			invoke("getDatabaseVersion").then((v) => {
 				setLocalVersion(v.unwrap());
@@ -176,11 +186,7 @@ export default function Push() {
 					>
 						重新获取远程版本
 					</Button>
-					<Button
-						onClick={() => doSync()}
-						loading={loading}
-						disabled={loading}
-					>
+					<Button onClick={() => doSync()} disabled={loading}>
 						同步
 					</Button>
 				</div>

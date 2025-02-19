@@ -333,11 +333,7 @@ export const pushDatabase = async () => {
  * 获取远程数据库版本
  */
 export const getRemoteVersion = async (): Promise<string> => {
-	const res = await fetch(Config.settings.database.remote + "version", {
-		headers: {
-			Authorization: Config.settings.database.token,
-		},
-	});
+	const res = await request("version", "GET");
 	return await res.text();
 };
 
