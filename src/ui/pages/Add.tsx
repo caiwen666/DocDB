@@ -259,7 +259,7 @@ export default function Add() {
 								<DocumentItem
 									variant={1}
 									className={"bg-card"}
-									info={item.info}
+									info={target.info}
 								/>
 							</DialogContent>
 						),

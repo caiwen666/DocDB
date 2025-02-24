@@ -274,13 +274,19 @@ export default function DocumentForm({
 					<FormControl className={"mt-1"}>
 						<RadioGroup row>
 							<FormControlLabel
-								onClick={() => setTagType(0)}
+								onClick={() => {
+									setTagType(0);
+									tagTypeRef.current = 0;
+								}}
 								value={0}
 								control={<Radio checked={tagType == 0} />}
 								label="筛选标签"
 							/>
 							<FormControlLabel
-								onClick={() => setTagType(1)}
+								onClick={() => {
+									setTagType(1);
+									tagTypeRef.current = 1;
+								}}
 								value={1}
 								control={<Radio checked={tagType == 1} />}
 								label="标志标签"

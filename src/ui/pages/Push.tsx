@@ -209,53 +209,55 @@ export default function Push() {
 							},
 						}}
 					>
-						{_.reverse(track).map((item) => {
-							let op = "";
-							if (item.operation === 0) op = "添加试卷";
-							if (item.operation === 1) op = "修改试卷";
-							if (item.operation === 2) op = "删除试卷";
-							return (
-								<TimelineItem key={item.id}>
-									<TimelineSeparator>
-										<TimelineDot variant="outlined" color="primary" />
-										<TimelineConnector />
-									</TimelineSeparator>
-									<TimelineContent>
-										<div className={"text-sm"}>
-											{op} - {dayjs(item.time).format("YYYY-MM-DD HH:ss")}
-										</div>
-										{item.operation === 0 && (
-											<DocumentItem
-												variant={1}
-												info={item.info}
-												className={"bg-primary bg-opacity-20 mt-2"}
-											/>
-										)}
-										{item.operation === 1 && (
-											<>
+						{_.reverse(
+							track.map((item) => {
+								let op = "";
+								if (item.operation === 0) op = "添加试卷";
+								if (item.operation === 1) op = "修改试卷";
+								if (item.operation === 2) op = "删除试卷";
+								return (
+									<TimelineItem key={item.id}>
+										<TimelineSeparator>
+											<TimelineDot variant="outlined" color="primary" />
+											<TimelineConnector />
+										</TimelineSeparator>
+										<TimelineContent>
+											<div className={"text-sm"}>
+												{op} - {dayjs(item.time).format("YYYY-MM-DD HH:mm")}
+											</div>
+											{item.operation === 0 && (
 												<DocumentItem
 													variant={1}
 													info={item.info}
-													className={"bg-success bg-opacity-20 mt-2"}
+													className={"bg-primary bg-opacity-20 mt-2"}
 												/>
+											)}
+											{item.operation === 1 && (
+												<>
+													<DocumentItem
+														variant={1}
+														info={item.info}
+														className={"bg-success bg-opacity-20 mt-2"}
+													/>
+													<DocumentItem
+														variant={1}
+														info={item.oldInfo}
+														className={"bg-error bg-opacity-20 mt-2"}
+													/>
+												</>
+											)}
+											{item.operation === 2 && (
 												<DocumentItem
 													variant={1}
-													info={item.oldInfo}
+													info={item.info}
 													className={"bg-error bg-opacity-20 mt-2"}
 												/>
-											</>
-										)}
-										{item.operation === 2 && (
-											<DocumentItem
-												variant={1}
-												info={item.info}
-												className={"bg-error bg-opacity-20 mt-2"}
-											/>
-										)}
-									</TimelineContent>
-								</TimelineItem>
-							);
-						})}
+											)}
+										</TimelineContent>
+									</TimelineItem>
+								);
+							}),
+						)}
 					</Timeline>
 				))}
 		</div>
