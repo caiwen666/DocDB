@@ -36,6 +36,7 @@ export default function DocumentForm({
 		filter: boolean;
 	}
 
+	if (form.date === undefined) form.date = { year: -1, yearType: 0 };
 	const initTags: Tag[] = [];
 	for (const tag of form.filter) {
 		initTags.push({ name: tag, filter: true });
@@ -231,7 +232,7 @@ export default function DocumentForm({
 				{tags.map((tag) => (
 					<Chip
 						key={tag.name}
-						color={tag.filter === false ? "primary" : "success"}
+						color={tag.filter === false ? "success" : "primary"}
 						variant={"outlined"}
 						label={tag.name}
 						className={"m-1"}

@@ -1,7 +1,5 @@
 import { app, BrowserWindow } from "electron";
-import {
-	initDatabase,
-} from "./backend/database";
+import { initDatabase } from "./backend/database";
 import { initAPI, send } from "./backend/api";
 import * as fs from "node:fs";
 import path from "path";
@@ -22,7 +20,7 @@ const createWindow = (): void => {
 		width: 800,
 		minHeight: 600,
 		minWidth: 800,
-		show: false,  // 隐藏窗口，等待加载完成后再显示，避免闪烁
+		show: false, // 隐藏窗口，等待加载完成后再显示，避免闪烁
 		webPreferences: {
 			preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
 			nodeIntegration: true,
@@ -38,11 +36,17 @@ const createWindow = (): void => {
 	// 初始化数据
 	Config.window = mainWindow;
 	Config.font = fs.readFileSync(path.join(process.cwd(), "font.ttf"));
-	readFile(path.join(process.cwd(), "config.json"), JSON.stringify(Config.settings)).then((settings) => {
+	readFile(
+		path.join(process.cwd(), "config.json"),
+		JSON.stringify(Config.settings),
+	).then((settings) => {
 		// TODO: 有可能配置文件还没读完渲染进程就调用相关接口了？
 		Config.settings = JSON.parse(settings);
 	});
 	// 清理临时文件
+	if (!fs.existsSync(path.join(process.cwd(), "data", "tmp"))) {
+		fs.mkdirSync(path.join(process.cwd(), "data", "tmp"), { recursive: true });
+	}
 	const tempFiles = fs.readdirSync(path.join(process.cwd(), "data", "tmp"));
 	for (const file of tempFiles) {
 		try {

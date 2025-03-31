@@ -1,11 +1,9 @@
 import { ipcMain } from "electron";
 import { InvokeWrapper } from "../shared/types/api";
 import {
-	getDatabaseStatus,
-	getDatabaseSummary, getDatabaseVersion,
-	getRemoteVersion, getTrack, isFileExist,
-	pullDatabase,
-	pushDatabase,
+	checkDatabaseLatest,
+	getDatabaseSummary,
+	pullDatabase, saveDatabase, updateDatabase,
 } from "./database";
 import { ExportedAPI, ExportedCallback } from "../shared/api";
 import { closeWindow, maximizeWindow, minimizeWindow, popMenu } from "./window";
@@ -27,9 +25,7 @@ import { Config } from "./config";
 export const initAPI = () => {
 	// 如果把这个定义放到外面，会导致出现 undefined 的情况
 	const API: ExportedAPI = {
-		getRemoteVersion,
 		pullDatabase,
-		pushDatabase,
 		popMenu,
 		fetchBack,
 		openFile,
@@ -43,12 +39,11 @@ export const initAPI = () => {
 		updateDocument,
 		getDocument,
 		searchDocument,
-		isFileExist,
-		getDatabaseStatus,
-		getTrack,
-		getDatabaseVersion,
 		getDocumentByMD5,
 		closeWindow,
+		updateDatabase,
+		saveDatabase,
+		checkDatabaseLatest
 	};
 	ipcMain.handle("invoke_handler", async (_, ...args) => {
 		const [func, ...params] = args;

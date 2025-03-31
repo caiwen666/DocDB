@@ -74,7 +74,7 @@ src: 客户端代码
      - Add.tsx: 添加试卷页面
      - Checked.tsx: 查看已选中试卷页面
      - Home.tsx: 主页
-     - Push.tsx: 同步页面
+     - Setting.tsx: 设置页面
      - Search.tsx: 搜索页面
    - stores: 全局状态管理
      - dialog.ts: 我们封装了一个对话框队列，用于把对话框统一放到一个位置渲染

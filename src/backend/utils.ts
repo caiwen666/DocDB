@@ -16,7 +16,7 @@ export async function getFileDetail(pathStr: string): Promise<FileDetail> {
 	const fileBuffer = await fs.promises.readFile(pathStr);
 	const hash = crypto.createHash("md5");
 	hash.update(fileBuffer);
-	const pdf = await PDFDocument.load(fileBuffer);
+	const pdf = await PDFDocument.load(fileBuffer, { ignoreEncryption: true });
 	return {
 		name: pathObj.name,
 		path: pathStr,
@@ -65,6 +65,13 @@ export const writeFile = async (target: string, body: any) => {
 export const openFile = async (target: string) => {
 	exec(`start "" "${target}"`);
 };
+
+// 统一响应格式
+export interface APIResponse {
+	status: 'ok' | 'failed';
+	data?: unknown;
+	msg?: string;
+}
 
 /**
  * 简单封装 http请求，自动添加 token 和请求地址

@@ -141,3 +141,10 @@ export const asyncSleep = (ms: number) => {
 		}, ms);
 	});
 };
+
+/**
+ * nodejs这种高级语言还是把持不住
+ */
+export const clone = <T>(obj: T) => {
+	return JSON.parse(JSON.stringify(obj)) as T;
+};

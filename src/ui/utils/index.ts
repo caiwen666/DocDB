@@ -1,3 +1,6 @@
+import { invoke } from "../api";
+import { useDialogStore } from "../stores/dialog";
+
 /**
  * 获取一个页面所在的容器
  * 一般是主界面容器包裹一个包装div，包装div内就是页面内容
@@ -11,4 +14,3 @@ export const getPageContainer = (
 	if (!parent) return null;
 	return parent.parentElement;
 };
-

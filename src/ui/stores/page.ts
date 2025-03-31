@@ -8,8 +8,8 @@ import PlaylistAddCheckIcon from "@mui/icons-material/PlaylistAddCheck";
 import Checked from "../pages/Checked";
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import Add from "../pages/Add";
-import AltRouteOutlinedIcon from "@mui/icons-material/AltRouteOutlined";
-import Push from "../pages/Push";
+import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
+import Setting from "../pages/Setting";
 
 export interface Page {
 	title: string;
@@ -44,10 +44,10 @@ export const Pages: Page[] = [
 		content: Add,
 	},
 	{
-		title: "推送",
-		id: "push",
-		icon: AltRouteOutlinedIcon,
-		content: Push,
+		title: "设置",
+		id: "setting",
+		icon: SettingsOutlinedIcon,
+		content: Setting,
 	},
 ];
 
@@ -57,6 +57,6 @@ export interface PageStore {
 }
 
 export const usePageStore = create<PageStore>((set) => ({
-	now: 0,
+	now: 1,
 	setNow: (now: number) => set({ now }),
 }));

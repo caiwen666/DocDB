@@ -19,6 +19,7 @@ import { useEffect, useRef, useState } from "react";
 import FileOpenOutlinedIcon from "@mui/icons-material/FileOpenOutlined";
 import FileUploadOutlinedIcon from "@mui/icons-material/FileUploadOutlined";
 import {
+	clone,
 	formatDocumentInfo,
 	formatToString,
 	parseName,
@@ -33,6 +34,9 @@ import ExpandLessOutlinedIcon from "@mui/icons-material/ExpandLessOutlined";
 import ExpandMoreOutlinedIcon from "@mui/icons-material/ExpandMoreOutlined";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import DocumentForm from "../components/DocumentForm";
+import { useDatabaseStore } from "../stores/database";
+import DialogBarProgressTemplate from "../components/dialog/DialogBarProgressTemplate";
+import DialogProgressTemplate from "../components/dialog/DialogCircleProgressTemplate";
 
 const FileItem = ({
 	form,
@@ -112,6 +116,10 @@ export default function Add() {
 	const selfRef = useRef<HTMLDivElement>(null);
 	const [documents, setDocuments] = useState<DocumentFromFile[]>([]);
 	const documentsRef = useRef<DocumentFromFile[]>([]);
+	// 推送文件时的进度条
+	const [showDialog, setShowDialog] = useState(false);
+	const [totalProgress, setTotalProgress] = useState(0);
+	const [currentProgress, setCurrentProgress] = useState(0);
 	// 用于判断表单是否通过了验证，key为表单对应文件的md5
 	const isValidRef = useRef<{ [key: string]: boolean }>({});
 	const addDocument = async (files: File[]) => {
@@ -126,19 +134,19 @@ export default function Add() {
 				const result = (await invoke("getFileDetail", path)).unwrap();
 				// 判断重复
 				// 从数据库中检索
-				if ((await invoke("isFileExist", result.md5)).unwrap()) {
-					const repeat = (
-						await invoke("getDocumentByMD5", result.md5)
-					).unwrap();
+				const repeatFromDatabase = (
+					await invoke("getDocumentByMD5", result.md5)
+				).unwrap();
+				if (repeatFromDatabase) {
 					throw (
 						"文件重复，数据库中已存在文件：\n" +
-						`[${repeat.id}]${formatDocumentInfo(repeat.info)}`
+						`[${repeatFromDatabase.id}]${formatDocumentInfo(repeatFromDatabase.info)}`
 					);
 				}
 				// 从先前添加的文件中检索
-				const repeat = docArray.find((item) => item.md5 === result.md5);
-				if (repeat) {
-					throw "文件重复，先前存在的文件：\n" + file.name;
+				const repeatFromList = docArray.find((item) => item.md5 === result.md5);
+				if (repeatFromList) {
+					throw "文件重复，先前存在的文件：\n" + repeatFromList.file;
 				}
 				const doc: DocumentFromFile = {
 					id: 0,
@@ -189,6 +197,20 @@ export default function Add() {
 		e.preventDefault();
 		const items = e.dataTransfer.items;
 		if (!items) return;
+		const databaseStore = useDatabaseStore.getState();
+		if (databaseStore.latest !== databaseStore.now) {
+			pushDialog({
+				title: "错误",
+				content: (
+					<DialogContent>
+						<DialogContentText>
+							本地数据库不是最新版本，请先同步数据库。
+						</DialogContentText>
+					</DialogContent>
+				),
+			});
+			return;
+		}
 		const fileArray = [];
 		for (const item of items) {
 			if (item.kind !== "file") continue;
@@ -224,7 +246,9 @@ export default function Add() {
 		setLoading(true);
 		const readyDocuments: DocumentFromFile[] = [];
 		const remainDocuments: DocumentFromFile[] = [];
-		for (const item of documentsRef.current) {
+		// 这里需要克隆一下，防止表单组件莫名其妙刷新，使得我们的对象发生修改，nodejs的引用传递真的很恶心
+		const list = clone(documentsRef.current);
+		for (const item of list) {
 			if (!isValidRef.current[item.md5]) {
 				remainDocuments.push(item);
 				continue;
@@ -263,44 +287,71 @@ export default function Add() {
 								/>
 							</DialogContent>
 						),
-						buttons: ["取消", "继续"],
+						buttons: ["取消", "取消但保留", "继续"],
 						callback: resolve,
 					});
 				});
 				if (op === "取消") {
 					continue;
 				}
+				if (op === "取消但保留") {
+					remainDocuments.push(item);
+					continue;
+				}
 			}
 			if (item.info.date.year === -1) item.info.date = undefined;
 			readyDocuments.push(item);
 		}
-		setDocuments(remainDocuments);
-		documentsRef.current = remainDocuments;
-		const result = await invoke("addDocument", readyDocuments);
-		if (result.isOk()) {
+
+		setShowDialog(true);
+		setTotalProgress(readyDocuments.length);
+		setCurrentProgress(0);
+		let reject = false; // 后续的文件推送是否被取消
+		for (const item of readyDocuments) {
+			if (reject) {
+				remainDocuments.push(item);
+				continue;
+			}
+			const result = await invoke("addDocument", item);
+			if (result.isOk()) {
+				setCurrentProgress((v) => v + 1);
+			} else {
+				reject = true;
+				setShowDialog(false);
+				pushDialog({
+					title: "错误",
+					content: (
+						<DialogContent>
+							<DialogErrorTemplate
+								info={"添加试卷失败"}
+								error={result.getError()}
+							/>
+							<DocumentItem info={item.info} variant={1} />
+						</DialogContent>
+					),
+				});
+				remainDocuments.push(item);
+			}
+		}
+
+		if (!reject) {
 			pushDialog({
 				title: "成功",
 				content: (
 					<DialogContent>
 						<DialogContentText>
-							成功添加了{readyDocuments.length}份试卷
+							已经把所有的试卷成功添加到数据库中。
 						</DialogContentText>
 					</DialogContent>
 				),
 			});
-		} else {
-			pushDialog({
-				title: "错误",
-				content: (
-					<DialogContent>
-						<DialogErrorTemplate
-							info={"添加试卷失败"}
-							error={result.getError()}
-						/>
-					</DialogContent>
-				),
-			});
 		}
+
+		setDocuments(remainDocuments);
+		documentsRef.current = remainDocuments;
+		await invoke("updateDatabase");
+		await invoke("saveDatabase");
+		setShowDialog(false);
 		setLoading(false);
 	};
 	return (
@@ -345,6 +396,17 @@ export default function Add() {
 					}}
 				/>
 			))}
+			<Dialog open={showDialog}>
+				<DialogTitle>添加试卷</DialogTitle>
+				<DialogContent>
+					<DialogProgressTemplate
+						variant={"bar"}
+						info={"正在推送文件到服务器..."}
+						ok={currentProgress}
+						total={totalProgress}
+					/>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }

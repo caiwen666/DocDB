@@ -12,6 +12,7 @@ export default function DocumentItem({
 	className = "",
 	info,
 	onDoubleClick,
+	id,
 }: {
 	variant?: 0 | 1; //0:可勾选 1:文件展示
 	onSelect?: () => void;
@@ -20,6 +21,7 @@ export default function DocumentItem({
 	className?: string;
 	info: DocumentInfo;
 	onDoubleClick?: () => void;
+	id?: number;
 }) {
 	let yearFormat = "未知年份";
 	if (info.date) {
@@ -66,6 +68,7 @@ export default function DocumentItem({
 								{info.answer ? "有答案" : "仅试卷"}
 							</span>
 							{info.identifier.length != 0 && " " + info.identifier}
+							<span className={"text-title"}>{id && " #" + id}</span>
 						</div>
 					</div>
 				</div>

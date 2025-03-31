@@ -13,6 +13,8 @@ import CheckOutlinedIcon from "@mui/icons-material/CheckOutlined";
 import DialogBase from "./ui/components/dialog/DialogBase";
 import React, { useEffect, useState } from "react";
 import { initCallback, invoke, subscribe } from "./ui/api";
+import { useDatabaseStore } from "./ui/stores/database";
+import { WarningAmberOutlined } from "@mui/icons-material";
 
 const root = createRoot(document.body);
 root.render(<App />);
@@ -72,8 +74,7 @@ function App() {
 	const pageStore = usePageStore();
 	const [isMaximized, setIsMaximized] = useState(false);
 	const [isSideMenuOpen, setIsSideMenuOpen] = useState(false);
-	const [isDatabaseReady, setIsDatabaseReady] = useState(false);
-	const [databaseVersion, setDatabaseVersion] = useState("");
+	const databaseStore = useDatabaseStore();
 	const menuStyles = useSpring({
 		width: isSideMenuOpen ? "192px" : "40px",
 		overflow: "hidden",
@@ -82,24 +83,8 @@ function App() {
 		subscribe("onWindowStateChange", (isMaximized: boolean) => {
 			setIsMaximized(isMaximized);
 		});
-		subscribe("onDatabaseStatusChange", async (status: string) => {
-			if (status === "ready") {
-				setIsDatabaseReady(true);
-				const version = await invoke("getDatabaseVersion");
-				setDatabaseVersion(version.unwrap());
-			} else {
-				setIsDatabaseReady(false);
-			}
-		});
-		invoke("getDatabaseStatus").then((status) => {
-			if (status.unwrap() === "pending") {
-				setIsDatabaseReady(false);
-			} else {
-				setIsDatabaseReady(true);
-				invoke("getDatabaseVersion").then((version) => {
-					setDatabaseVersion(version.unwrap());
-				});
-			}
+		subscribe("onDatabaseStatusChange", async (status, now, latest) => {
+			databaseStore.setStatus(status, latest, now);
 		});
 	}, []);
 	return (
@@ -202,14 +187,23 @@ function App() {
 					}
 					onClick={() => pageStore.setNow(4)}
 				>
-					{isDatabaseReady ? (
-						<CheckOutlinedIcon fontSize={"inherit"} />
-					) : (
+					{databaseStore.status === "pending" && <>
 						<CircularProgress size="12px" className={"text-white ml-1"} />
+						<div className={"text-xs ml-2 mr-1"}>正在加载</div>
+					</>}
+					{databaseStore.status === "ready" && (
+						(databaseStore.latest === databaseStore.now) ? (
+							<>
+								<CheckOutlinedIcon fontSize={"inherit"} />
+								<div className={"text-xs ml-2 mr-1"}>本地版本：{databaseStore.now}</div>
+							</>
+						) : (
+							<>
+								<WarningAmberOutlined fontSize={"inherit"}></WarningAmberOutlined>
+								<div className={"text-xs ml-2 mr-1"}>发现新版本，本地落后{databaseStore.latest - databaseStore.now}个操作</div>
+							</>
+						)
 					)}
-					<div className={"text-xs ml-2 mr-1"}>
-						{isDatabaseReady ? `本地版本：${databaseVersion}` : "正在加载"}
-					</div>
 				</ButtonBase>
 			</div>
 			<DialogBase />

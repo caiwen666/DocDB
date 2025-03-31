@@ -1,4 +1,6 @@
 import {
+	Button,
+	ButtonBase,
 	Checkbox,
 	Chip,
 	CircularProgress,
@@ -27,13 +29,14 @@ import { invoke, subscribe, unsubscribe } from "../api";
 import { useDialogStore } from "../stores/dialog";
 import DialogErrorTemplate from "../components/dialog/DialogErrorTemplate";
 import { useSelectedStore } from "../stores/select";
-import { calcMoney, formatToString } from "../../shared/utils";
+import { calcMoney, clone, formatToString } from "../../shared/utils";
 import DocumentForm from "../components/DocumentForm";
 import DialogProgressTemplate from "../components/dialog/DialogCircleProgressTemplate";
 import DialogBarProgressTemplate from "../components/dialog/DialogBarProgressTemplate";
 import classNames from "classnames";
 import DocumentItem from "../components/DocumentItem";
 import { ExportedCallback } from "../../shared/api";
+import { useDatabaseStore } from "../stores/database";
 
 const ItemList = ({
 	className,
@@ -94,6 +97,22 @@ const ItemList = ({
 	) => {
 		//console.log("onMenuCallback", target, operation);
 		const handle = async () => {
+			if (operation === "编辑" || operation === "删除") {
+				const databaseStore = useDatabaseStore.getState();
+				if (databaseStore.now !== databaseStore.latest) {
+					pushDialog({
+						title: "错误",
+						content: (
+							<DialogContent>
+								<DialogContentText>
+									本地数据库不是最新版本，请先同步数据库。
+								</DialogContentText>
+							</DialogContent>
+						),
+					});
+					return;
+				}
+			}
 			if (operation === "编辑") {
 				let form = target[0].info;
 				let isValidate = false;
@@ -125,21 +144,25 @@ const ItemList = ({
 					});
 				});
 				if (op === "确定") {
-					(await invoke("updateDocument", target[0].id, form)).unwrap_or_else(
-						(e) => {
-							pushDialog({
-								title: "错误",
-								content: (
-									<DialogContent>
-										<DialogErrorTemplate
-											info={"更新试卷信息时发生错误"}
-											error={e}
-										/>
-									</DialogContent>
-								),
-							});
-						},
-					);
+					// 最好先克隆一下防止更新
+					const formClone = clone(form);
+					if (formClone.date && formClone.date.year === -1)
+						formClone.date = undefined;
+					(
+						await invoke("updateDocument", target[0].id, formClone)
+					).unwrap_or_else((e) => {
+						pushDialog({
+							title: "错误",
+							content: (
+								<DialogContent>
+									<DialogErrorTemplate
+										info={"更新试卷信息时发生错误"}
+										error={e}
+									/>
+								</DialogContent>
+							),
+						});
+					});
 					onRefresh();
 				}
 			}
@@ -188,6 +211,8 @@ const ItemList = ({
 								});
 							});
 						}
+						// 既然文件已经被删完了，那么我们就取消勾选
+						selectedStore.remove(item.id);
 					}
 					onRefresh();
 					closeWaitingDialog();
@@ -285,6 +310,7 @@ const ItemList = ({
 						selectedCount++;
 					}
 				}
+				console.log(list);
 				if (selectedCount === list.length) {
 					// 全选了就全都不选
 					list.forEach((item) => selectedStore.remove(item.id));
@@ -361,6 +387,7 @@ const ItemList = ({
 							itemRefs.current[index] = el;
 						}}
 						onDoubleClick={() => open(item.id)}
+						id={item.id}
 					/>
 				);
 			})}
@@ -471,21 +498,62 @@ export default function Search() {
 		handleSearch();
 	};
 	// search data
-	const [time, setTime] = useState(0);
-	const [data, setData] = useState<Document[]>([]);
-	const allDataRef = useRef<Document[]>([]);
-	const [allTag, setAllTag] = useState<string[]>([]);
-	const allTagRef = useRef<string[]>([]);
-	const [tag, setTag] = useState<string[]>([]);
-	const tagRef = useRef<string[]>([]);
+	const [time, setTime] = useState(0); // 搜索耗时
+	const [data, setData] = useState<Document[]>([]); // 显示的数据
+	const allDataRef = useRef<Document[]>([]); // 实际上所有关键词命中的数据
+	interface Tag {
+		tag: string;
+		show: boolean; // 是否显示，选中试卷类型和试卷名称之后部分标签可能会被隐藏
+		chosen: boolean; // 是否被选中
+	}
+	const [tagList, setTagList] = useState<Tag[]>([]);
+	const tagListRef = useRef<Tag[]>([]);
+	interface Name {
+		// 课程名称
+		name: string;
+		show: boolean;
+		chosen: boolean; // 是否被选中
+	}
+	const [nameList, setNameList] = useState<Name[]>([]);
+	const nameListRef = useRef<Name[]>([]);
+	// nameList, tag, keyword 相当于一组搜索状态
 	const filterData = (calcTime = true) => {
 		const startTime = new Date().getTime();
+		// 当前选中的名称。选中不一定显示
+		const chosenNames = nameListRef.current
+			.filter((item) => item.chosen)
+			.map((item) => item.name);
+		// 设置显示状态
+		const showNames: string[] = [];
+		const showTags: string[] = [];
+		for (const doc of allDataRef.current) {
+			if (!typeRef.current.includes(doc.info.type)) continue; // 类型不匹配，名称和标签都不显示
+			if (!showNames.includes(doc.info.name)) showNames.push(doc.info.name);
+			if (!chosenNames.includes(doc.info.name)) continue; // 没选上名称，标签不显示
+			for (const tag of doc.info.filter) {
+				if (!showTags.includes(tag)) showTags.push(tag);
+			}
+		}
+		nameListRef.current.forEach((item) => {
+			item.show = showNames.includes(item.name);
+		});
+		tagListRef.current.forEach((item) => {
+			item.show = showTags.includes(item.tag);
+		});
+		setNameList(nameListRef.current);
+		setTagList(tagListRef.current);
+		// 筛出当前已经选中的tag
+		const chosenTags = tagListRef.current
+			.filter((item) => item.show && item.chosen)
+			.map((item) => item.tag);
 		const result = allDataRef.current.filter((item) => {
-			if (!typeRef.current.includes(item.info.type)) return false;
+			if (!typeRef.current.includes(item.info.type)) return false; // 类型不匹配
+			if (!chosenNames.includes(item.info.name)) return false; // 课程名称未选中
 			if (
-				_.intersection(tagRef.current, item.info.filter).length ===
+				_.intersection(chosenTags, item.info.filter).length ===
 				item.info.filter.length
 			)
+				// 需要所有标签都被选中
 				return true;
 			return false;
 		});
@@ -498,7 +566,6 @@ export default function Search() {
 	const handleSearch = (refresh = true) => {
 		setLoading(true);
 		loadingRef.current = true;
-		setAllTag([]);
 		_.debounce(async () => {
 			if (keywordRef.current.length !== 0) {
 				const startTime = new Date().getTime();
@@ -515,38 +582,54 @@ export default function Search() {
 					});
 					return [];
 				});
-				// 准备标签
-				const filterTags: string[] = [];
+				// 准备名称列表
+				const allNames: string[] = [];
+				for (const doc of result) {
+					if (!allNames.includes(doc.info.name)) {
+						allNames.push(doc.info.name);
+					}
+				}
+				const remainNames: Name[] = allNames.map((name) => {
+					// 刷新的话都不选中
+					if (refresh) return { name, show: false, chosen: false };
+					// 如果之前选中了，就保持选中
+					const before = nameListRef.current.find((i) => i.name === name);
+					if (before) return { name, show: false, chosen: before.chosen };
+					// 如果之前没有，就是新的，不选中
+					return { name, show: false, chosen: false };
+				});
+				// 准备标签，名称列表交给 filterData 处理
+				const allTags: string[] = [];
 				for (const doc of result) {
 					for (const item of doc.info.filter) {
-						if (!filterTags.includes(item)) {
-							filterTags.push(item);
+						if (!allTags.includes(item)) {
+							allTags.push(item);
 						}
 					}
 				}
-				// 如果不刷新的话，保持之前的选择状态
-				if (!refresh) {
-					const chosenTags: string[] = [];
-					filterTags.forEach((tag) => {
-						// 现在没有，原来有，直接抛弃
-						if (!allTagRef.current.includes(tag)) chosenTags.push(tag); //原来没有，现在有，选上
-						if (tagRef.current.includes(tag)) chosenTags.push(tag); //现在和原来都有，原来选了就选
-					});
-					setTag(chosenTags);
-					tagRef.current = chosenTags;
-				} else {
-					setTag(filterTags);
-					tagRef.current = filterTags;
-				}
-				setAllTag(filterTags);
-				allTagRef.current = filterTags;
+				const remainTags: Tag[] = allTags.map((tag) => {
+					// 刷新的话都不选中
+					if (refresh) return { tag, show: false, chosen: false };
+					// 如果之前选中了，就保持选中
+					const before = tagListRef.current.find((i) => i.tag === tag);
+					if (before) return { tag, show: false, chosen: before.chosen };
+					// 如果之前没有，就是新的，不选中
+					return { tag, show: false, chosen: false };
+				});
 				// 准备数据
 				allDataRef.current = result;
-				// 初筛
+				// taglist和namelist 先不提交，由 filterData 来设置是否显示
+				tagListRef.current = remainTags;
+				nameListRef.current = remainNames;
+				// 基于搜索状态过滤数据
 				filterData(false);
 				// 计算耗时
 				const endTime = new Date().getTime();
 				setTime(endTime - startTime);
+			} else {
+				setData([]);
+				setNameList([]);
+				setTagList([]);
 			}
 			setLoading(false);
 			loadingRef.current = false;
@@ -655,27 +738,51 @@ export default function Search() {
 								/>
 							))}
 						</Stack>
-						{allTag.length !== 0 && (
+						{nameList.filter((name) => name.show).length !== 0 && (
+							<>
+								<Divider className={"mt-1"} />
+								{nameList.map((item, index) => (
+									<ButtonBase
+										component={"div"}
+										className={classNames(
+											"block px-3 py-1.5 text-sm transition-all text-title",
+											{
+												"bg-black bg-opacity-0 hover:bg-opacity-20":
+													!item.chosen,
+												"bg-primary bg-opacity-20 hover:bg-opacity-40":
+													item.chosen,
+												hidden: !item.show,
+											},
+										)}
+										key={item.name}
+										onClick={() => {
+											nameListRef.current[index].chosen = !item.chosen;
+											setNameList([...nameListRef.current]);
+											filterData();
+										}}
+									>
+										{item.name}
+									</ButtonBase>
+								))}
+							</>
+						)}
+						{tagList.filter((tag) => tag.show).length !== 0 && (
 							<>
 								<Divider className={"mt-1"} />
 								<div className={"flex flex-wrap m-1 z-50"}>
-									{allTag.map((item) => (
+									{tagList.map((item, index) => (
 										<Chip
-											key={item}
-											label={item}
-											color={tag.includes(item) ? "primary" : "default"}
+											key={item.tag}
+											label={item.tag}
+											color={item.chosen ? "primary" : "default"}
 											variant="outlined"
 											size={"small"}
-											className={"m-1"}
+											className={classNames("m-1", {
+												hidden: !item.show,
+											})}
 											onClick={() => {
-												if (tagRef.current.includes(item)) {
-													tagRef.current = tagRef.current.filter(
-														(tag) => tag !== item,
-													);
-												} else {
-													tagRef.current.push(item);
-												}
-												setTag([...tagRef.current]);
+												tagListRef.current[index].chosen = !item.chosen;
+												setTagList([...tagListRef.current]);
 												filterData();
 											}}
 										/>

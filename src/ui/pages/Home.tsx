@@ -2,15 +2,23 @@ import DataSaverOffOutlinedIcon from "@mui/icons-material/DataSaverOffOutlined";
 import { useEffect, useState } from "react";
 import { DatabaseSummary } from "../../shared/types/database";
 import { invoke } from "../api";
+import { Pages, usePageStore } from "../stores/page";
 
 export default function Home() {
 	const [dataSummary, setDataSummary] = useState<DatabaseSummary>(null);
 	useEffect(() => {
-		invoke("getDatabaseSummary").then((summary) => {
+		const init = async () => {
+			const summary = await invoke("getDatabaseSummary");
 			if (summary.isOk()) {
 				setDataSummary(summary.unwrap());
 			}
+		};
+		usePageStore.subscribe((state) => {
+			if (Pages[state.now].id === "home") {
+				init();
+			}
 		});
+		init();
 	}, []);
 	return (
 		<div className={"pt-12"}>

@@ -12,14 +12,14 @@ import fontkit from "fontkit";
 import { Fontkit } from "pdf-lib/es/types/fontkit";
 import { Config } from "./config";
 import { degrees } from "pdf-lib/es/api/rotations";
-import Path from "path";
-import { v4 as uuidv4 } from "uuid";
 import { Database, saveDatabase, updateDatabase, wait } from "./database";
 import { AddRecord, DeleteRecord, ModifyRecord } from "../shared/types/record";
-import { openFile } from "./utils";
+import { APIResponse, openFile, request } from "./utils";
+import fetch from "node-fetch";
+import FormData from "form-data";
 
 // 数据库所在目录
-const cwd = Path.join(process.cwd(), "data");
+const cwd = path.join(process.cwd(), "data");
 
 /**
  * 取回文件
@@ -42,7 +42,7 @@ export const fetchBack = async (
 		const file = await fs.promises.readFile(
 			path.join(process.cwd(), "data", "files", doc.document.md5 + ".pdf"),
 		);
-		const pdf = await PDFDocument.load(file);
+		const pdf = await PDFDocument.load(file, { ignoreEncryption: true });
 		const base = doc.document.info.page;
 		if (!doc.double) {
 			// 单面的话先批量插页，插到后面
@@ -164,39 +164,62 @@ export const fetchBack = async (
 
 /**
  * 添加试卷
- * @param docs
+ * @param doc
  */
-export const addDocument = async (docs: DocumentFromFile[]) => {
+export const addDocument = async (doc: DocumentFromFile) => {
 	await wait();
-	fs.mkdirSync(Path.join(cwd, "files"), { recursive: true });
-	// 获取文档的起始id
-	let startID = 0;
-	for (const doc of Database.data) {
-		if (doc.id > startID) {
-			startID = doc.id;
-		}
+	fs.mkdirSync(path.join(cwd, "files"), { recursive: true });
+	const remote = Config.settings.database.remote;
+	const token = Config.settings.database.token;
+	// 先看一下是否已经存在了
+	const checkRes = await request("hasFile?md5=" + doc.md5, "GET");
+	const checkData = ((await checkRes.json()) as APIResponse).data as boolean;
+	if (checkData) {
+		throw "文件已经存在于远程数据库中";
 	}
-	startID += 1;
-	for (const item of docs) {
-		const { path, file, ...doc } = item;
-		const target = Path.join(cwd, "files", doc.md5 + ".pdf");
-		// TODO 如果这里文件读入除了差错，那么整个要导入的数据就丢失了，需要解决
-		await fs.promises.copyFile(path, target);
-		doc.id = startID;
-		Database.data.push(doc);
-		const record: AddRecord = {
-			id: uuidv4(),
-			time: new Date(),
-			documentID: startID,
-			operation: 0,
-			info: doc.info,
-			file: doc.md5,
-		};
-		Database.track.push(record);
-		startID += 1;
+	// 上传文件
+	const form = new FormData();
+	const fileStream = fs.createReadStream(doc.path);
+	form.append("file", fileStream, doc.md5 + ".pdf");
+	await fetch(remote + "pushFile", {
+		method: "POST",
+		body: form,
+		headers: {
+			...form.getHeaders(),
+			Authorization: token,
+		},
+	});
+	// 上传信息
+	const res = await fetch(
+		remote +
+			`update?opt=create&rid=${Database.record.length - 1}&md5=${doc.md5}`,
+		{
+			method: "POST",
+			body: JSON.stringify(doc.info),
+			headers: {
+				"Content-Type": "application/json",
+				Authorization: token,
+			},
+		},
+	);
+	const data = (await res.json()) as APIResponse;
+	if (data.status === "failed") {
+		throw data.msg;
 	}
-	await saveDatabase();
-	await updateDatabase();
+	const record = data.data as AddRecord;
+	// 然后修改本地数据库
+	Database.data[doc.md5] = {
+		id: record.documentID,
+		md5: doc.md5,
+		info: doc.info,
+	};
+	Database.latest++;
+	Database.record.push(record);
+	// 入库
+	await fs.promises.copyFile(
+		doc.path,
+		path.join(cwd, "files", doc.md5 + ".pdf"),
+	);
 };
 
 /**
@@ -205,19 +228,27 @@ export const addDocument = async (docs: DocumentFromFile[]) => {
  */
 export const deleteDocument = async (id: number) => {
 	await wait();
-	const index = Database.data.findIndex((doc) => doc.id === id);
-	if (index === -1) {
-		return;
+
+	const doc = Database.index[id];
+	const res = await fetch(
+		Config.settings.database.remote +
+			`update?opt=delete&rid=${Database.record.length - 1}&md5=${doc.md5}`,
+		{
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				Authorization: Config.settings.database.token,
+			},
+		},
+	);
+	const data = (await res.json()) as APIResponse;
+	if (data.status === "failed") {
+		throw data.msg;
 	}
-	const doc = Database.data[index];
-	Database.data.splice(index, 1);
-	const record: DeleteRecord = {
-		id: uuidv4(),
-		time: new Date(),
-		documentID: id,
-		operation: 2,
-	};
-	Database.track.push(record);
+	const record = data.data as DeleteRecord;
+	delete Database.data[doc.md5];
+	Database.record.push(record);
+	Database.latest++;
 	await saveDatabase();
 	await updateDatabase();
 };
@@ -229,19 +260,28 @@ export const deleteDocument = async (id: number) => {
  */
 export const updateDocument = async (id: number, info: DocumentInfo) => {
 	await wait();
-	const index = Database.data.findIndex((doc) => doc.id === id);
-	if (index === -1) {
-		return;
+
+	const doc = Database.index[id];
+	const res = await fetch(
+		Config.settings.database.remote +
+			`update?opt=modify&rid=${Database.record.length - 1}&md5=${doc.md5}`,
+		{
+			method: "POST",
+			body: JSON.stringify(info),
+			headers: {
+				"Content-Type": "application/json",
+				Authorization: Config.settings.database.token,
+			},
+		},
+	);
+	const data = (await res.json()) as APIResponse;
+	if (data.status === "failed") {
+		throw data.msg;
 	}
-	Database.data[index].info = info;
-	const record: ModifyRecord = {
-		id: uuidv4(),
-		time: new Date(),
-		documentID: id,
-		operation: 1,
-		info,
-	};
-	Database.track.push(record);
+	const record = data.data as ModifyRecord;
+	Database.data[doc.md5].info = info;
+	Database.record.push(record);
+	Database.latest++;
 	await saveDatabase();
 	await updateDatabase();
 };
@@ -289,5 +329,5 @@ export const openDocument = async (id: number) => {
  */
 export const getDocumentByMD5 = async (md5: string) => {
 	await wait();
-	return await getDocument(Database.fileIndex[md5]);
+	return Database.data[md5];
 };

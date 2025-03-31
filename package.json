@@ -47,6 +47,7 @@
     "name": "Caiwen",
     "email": "3102733279@qq.com"
   },
+  "description": "A document database",
   "license": "MIT",
   "dependencies": {
     "@emotion/react": "^11.14.0",
