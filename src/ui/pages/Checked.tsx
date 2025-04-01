@@ -92,6 +92,7 @@ const Item = ({
 								{info.answer ? "有答案" : "仅试卷"}
 							</span>
 							{info.identifier.length != 0 && " " + info.identifier}
+							<span className={"text-title"}>{` ${info.page}页`}</span>
 						</div>
 					</div>
 				</div>
@@ -271,6 +272,9 @@ export default function Checked() {
 					callback,
 				});
 			}
+			// 把原来勾选的都取消
+			selectedRef.current = [];
+			setSelected(selectedRef.current);
 		} catch (e) {
 			pushDialog({
 				title: "错误",

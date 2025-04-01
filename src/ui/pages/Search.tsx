@@ -61,6 +61,11 @@ const ItemList = ({
 	const selectedStore = useSelectedStore();
 	const selfRef = useRef<HTMLDivElement>(null);
 	const itemRefs = useRef<HTMLDivElement[]>([]);
+	// 闭包中可能无法获得prompt的最新状态，这里要搞一下
+	const listRef = useRef<Document[]>([]);
+	useEffect(() => {
+		listRef.current = list;
+	}, [list]);
 	const toggleItem = (index: number) => {
 		const id = list[index].id;
 		const state = useSelectedStore.getState();
@@ -305,18 +310,18 @@ const ItemList = ({
 				const state = useSelectedStore.getState();
 				// 判断是否全选
 				let selectedCount = 0;
-				for (const item of list) {
+				for (const item of listRef.current) {
 					if (state.selectedID.includes(item.id)) {
 						selectedCount++;
 					}
 				}
-				console.log(list);
-				if (selectedCount === list.length) {
+				console.log(listRef.current);
+				if (selectedCount === listRef.current.length) {
 					// 全选了就全都不选
-					list.forEach((item) => selectedStore.remove(item.id));
+					listRef.current.forEach((item) => selectedStore.remove(item.id));
 				} else {
 					// 把没选上的选上
-					list.forEach((item) => {
+					listRef.current.forEach((item) => {
 						if (!state.selectedID.includes(item.id)) {
 							selectedStore.add(item);
 						}
@@ -361,7 +366,7 @@ const ItemList = ({
 		const target: Document[] = [];
 		// 获取当前搜索结果中选中的
 		const state = useSelectedStore.getState();
-		for (const item of list) {
+		for (const item of listRef.current) {
 			if (state.selectedID.includes(item.id)) {
 				target.push(item);
 			}
