@@ -2,14 +2,18 @@ import { BrowserWindow } from "electron";
 
 // 全局配置信息
 export interface ISettings {
-	settings: { // 在根目录的 config.json 中配置
+	settings: {
+		// 在根目录的 config.json 中配置
 		database: {
 			remote: string;
 			token: string;
 		};
-	},
-	window: BrowserWindow, // 主窗口示例
-	font: Buffer  // 字体文件，用于取回试卷时嵌入字体
+		config: {
+			watermark: boolean;
+		};
+	};
+	window: BrowserWindow; // 主窗口示例
+	font: Buffer; // 字体文件，用于取回试卷时嵌入字体
 }
 
 export const Config: ISettings = {
@@ -17,6 +21,9 @@ export const Config: ISettings = {
 		database: {
 			remote: "https://doc.caiwen.work/",
 			token: "",
+		},
+		config: {
+			watermark: true,
 		},
 	},
 	window: null,

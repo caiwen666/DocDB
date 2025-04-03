@@ -211,6 +211,10 @@ export default function Checked() {
 						open(result.unwrap());
 						return false;
 					}
+					if (btn === "打开文件夹") {
+						invoke("openTempDir");
+						return false;
+					}
 					resolve("ok");
 				};
 				pushDialog({
@@ -230,6 +234,7 @@ export default function Checked() {
 						</DialogContent>
 					),
 					buttons: [
+						"打开文件夹",
 						"重新打开文件",
 						colorTarget.length === 0 ? "完成" : "下一步",
 					],
@@ -256,6 +261,10 @@ export default function Checked() {
 						open(result.unwrap());
 						return false;
 					}
+					if (btn === "打开文件夹") {
+						invoke("openTempDir");
+						return false;
+					}
 				};
 				pushDialog({
 					title: "成功",
@@ -268,7 +277,7 @@ export default function Checked() {
 							</DialogContentText>
 						</DialogContent>
 					),
-					buttons: ["重新打开文件", "完成"],
+					buttons: ["打开文件夹", "重新打开文件", "完成"],
 					callback,
 				});
 			}

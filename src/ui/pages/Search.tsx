@@ -267,6 +267,10 @@ const ItemList = ({
 								open(result.unwrap());
 								return false;
 							}
+							if (btn === "打开文件夹") {
+								invoke("openTempDir");
+								return false;
+							}
 						};
 						pushDialog({
 							title: "成功",
@@ -277,7 +281,7 @@ const ItemList = ({
 									</DialogContentText>
 								</DialogContent>
 							),
-							buttons: ["重新打开文件", "完成"],
+							buttons: ["打开文件夹", "重新打开文件", "完成"],
 							callback,
 						});
 						open(result.unwrap());

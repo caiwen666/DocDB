@@ -66,9 +66,16 @@ export const openFile = async (target: string) => {
 	exec(`start "" "${target}"`);
 };
 
+/**
+ * 打开临时目录
+ */
+export const openTempDir = async () => {
+	await openFile(path.join(process.cwd(), "data", "tmp"));
+};
+
 // 统一响应格式
 export interface APIResponse {
-	status: 'ok' | 'failed';
+	status: "ok" | "failed";
 	data?: unknown;
 	msg?: string;
 }

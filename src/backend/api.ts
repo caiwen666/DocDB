@@ -3,7 +3,9 @@ import { InvokeWrapper } from "../shared/types/api";
 import {
 	checkDatabaseLatest,
 	getDatabaseSummary,
-	pullDatabase, saveDatabase, updateDatabase,
+	pullDatabase,
+	saveDatabase,
+	updateDatabase,
 } from "./database";
 import { ExportedAPI, ExportedCallback } from "../shared/api";
 import { closeWindow, maximizeWindow, minimizeWindow, popMenu } from "./window";
@@ -11,12 +13,13 @@ import {
 	addDocument,
 	deleteDocument,
 	fetchBack,
-	getDocument, getDocumentByMD5,
+	getDocument,
+	getDocumentByMD5,
 	openDocument,
 	searchDocument,
 	updateDocument,
 } from "./document";
-import { getFileDetail, openFile } from "./utils";
+import { getFileDetail, openFile, openTempDir } from "./utils";
 import { Config } from "./config";
 
 /**
@@ -43,7 +46,8 @@ export const initAPI = () => {
 		closeWindow,
 		updateDatabase,
 		saveDatabase,
-		checkDatabaseLatest
+		checkDatabaseLatest,
+		openTempDir,
 	};
 	ipcMain.handle("invoke_handler", async (_, ...args) => {
 		const [func, ...params] = args;

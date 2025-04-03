@@ -2,5 +2,8 @@
   "database": {
     "remote": "https://doc.caiwen.work/",
     "token": "do-you-like-this-token?"
+  },
+  "settings": {
+    "watermark": true
   }
 }

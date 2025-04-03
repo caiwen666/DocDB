@@ -52,20 +52,20 @@ export const fetchBack = async (
 		} else if (base % 2 === 1) {
 			pdf.addPage();
 		}
-		const copy = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
-		const once = [];
-		if (!doc.double) {
-			//再放到中间来
-			for (let i = 0; i < base; i++) {
-				once.push(copy[i]);
-				once.push(copy[i + base]);
-			}
-		} else {
-			// 直接拷贝过去
-			once.push(...copy);
-		}
 		// 根据份数复制
 		for (let i = 0; i < doc.count; i++) {
+			const copy = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+			const once = [];
+			if (!doc.double) {
+				//再放到中间来
+				for (let i = 0; i < base; i++) {
+					once.push(copy[i]);
+					once.push(copy[i + base]);
+				}
+			} else {
+				// 直接拷贝过去
+				once.push(...copy);
+			}
 			pages.push(...once);
 		}
 		ok++;
