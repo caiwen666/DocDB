@@ -2,7 +2,12 @@ import Path from "path";
 import { app, dialog } from "electron";
 import * as fs from "node:fs";
 import { send } from "./api";
-import { DatabaseSummary, DocumentDatabase, DocumentIndex, DocumentNameIndex } from "../shared/types/database";
+import {
+	DatabaseSummary,
+	DocumentDatabase,
+	DocumentIndex,
+	DocumentNameIndex,
+} from "../shared/types/database";
 import { Record } from "../shared/types/record";
 import { APIResponse, readFile, request } from "./utils";
 // 数据库所在目录
@@ -54,13 +59,6 @@ export const updateDatabase = async () => {
 	// TODO: 未来可能会做到基于操作类型，直接在原有基础上快速更新索引？
 	Database.status = "pending";
 	send("onDatabaseStatusChange", "pending", -1, -1);
-	// 排序
-	const keys = Object.keys(Database.data);
-	keys.sort((a, b) => {
-		if (Database.data[a].info.date === undefined) return -1;
-		if (Database.data[b].info.date === undefined) return 1;
-		return Database.data[b].info.date.year - Database.data[a].info.date.year;
-	});
 	// 清除索引
 	Database.index = {};
 	Database.nameIndex = {};
@@ -68,9 +66,9 @@ export const updateDatabase = async () => {
 	Database.summary.courseCount = 0;
 	Database.summary.documentCount = 0;
 	// 建立索引
-	for (const md5 of keys) {
+	for (const md5 of Object.keys(Database.data)) {
 		const doc = Database.data[md5];
-		Database.summary.documentCount ++;
+		Database.summary.documentCount++;
 		Database.index[doc.id] = doc;
 		if (Database.nameIndex[doc.info.name] === undefined) {
 			Database.nameIndex[doc.info.name] = [];
@@ -79,7 +77,12 @@ export const updateDatabase = async () => {
 		Database.nameIndex[doc.info.name].push(doc.id);
 	}
 	Database.status = "ready";
-	send("onDatabaseStatusChange", "ready", Database.record.length - 1, Database.latest);
+	send(
+		"onDatabaseStatusChange",
+		"ready",
+		Database.record.length - 1,
+		Database.latest,
+	);
 };
 
 /**
@@ -88,12 +91,17 @@ export const updateDatabase = async () => {
 export const checkDatabaseLatest = async () => {
 	await wait();
 	const res = await request("latest", "GET");
-	const data = await res.json() as APIResponse;
-	if(data.status === "ok") {
+	const data = (await res.json()) as APIResponse;
+	if (data.status === "ok") {
 		Database.latest = data.data as number;
-		send("onDatabaseStatusChange", Database.status, Database.record.length - 1, Database.latest);
-	}else throw new Error(data.msg);
-}
+		send(
+			"onDatabaseStatusChange",
+			Database.status,
+			Database.record.length - 1,
+			Database.latest,
+		);
+	} else throw new Error(data.msg);
+};
 
 /**
  * 初始化数据库，从文件中读取数据
@@ -109,12 +117,12 @@ export const initDatabase = async () => {
 		await updateDatabase();
 		// 定期检查是否为最新版本
 		const checkUpdate = async () => {
-			try{
+			try {
 				await checkDatabaseLatest();
-			}catch(e){
+			} catch (e) {
 				console.error("Check database updated failed.", e);
 			}
-		}
+		};
 		checkUpdate();
 		setInterval(checkUpdate, 30 * 1000);
 	} catch (error) {
@@ -155,8 +163,11 @@ export const pullDatabase = async () => {
 	if (!fs.existsSync(Path.join(cwd, "files"))) {
 		await fs.promises.mkdir(Path.join(cwd, "files"), { recursive: true });
 	}
-	const res = await request("pull?target=" + (Database.record.length - 1), "GET");
-	const data = await res.json() as APIResponse;
+	const res = await request(
+		"pull?target=" + (Database.record.length - 1),
+		"GET",
+	);
+	const data = (await res.json()) as APIResponse;
 	const records = data.data as Record[];
 	if (data.status === "failed") {
 		throw new Error(data.msg as string);
@@ -164,23 +175,26 @@ export const pullDatabase = async () => {
 	send("onPullProgressUpdated", 0, records.length);
 	// 大力模拟操作就可以了
 	let ok = 0;
-	for(const record of records){
-		if(record.operation === "create"){
+	for (const record of records) {
+		if (record.operation === "create") {
 			// 看下文件是否存在
-			if(!fs.existsSync(Path.join(cwd, "files", record.file + ".pdf"))){
+			if (!fs.existsSync(Path.join(cwd, "files", record.file + ".pdf"))) {
 				const res = await request("getFile?md5=" + record.file, "GET");
-				await fs.promises.writeFile(Path.join(cwd, "files", record.file + ".pdf"), await res.buffer());
+				await fs.promises.writeFile(
+					Path.join(cwd, "files", record.file + ".pdf"),
+					await res.buffer(),
+				);
 			}
 			Database.data[record.file] = {
 				id: record.documentID,
 				md5: record.file,
-				info: record.info
+				info: record.info,
 			};
 		}
-		if(record.operation === "modify"){
+		if (record.operation === "modify") {
 			Database.data[record.file].info = record.info;
 		}
-		if(record.operation === "delete"){
+		if (record.operation === "delete") {
 			delete Database.data[record.file];
 		}
 		Database.record.push(record);
@@ -211,4 +225,4 @@ export const getDatabaseStatus = async () => {
  */
 export const getDatabaseLatest = async () => {
 	return Database.latest;
-}
+};

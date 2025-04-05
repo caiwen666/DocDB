@@ -127,13 +127,13 @@ export const fetchBack = async (
 					x: (width - 15 * 12) / 2,
 					y: height - 34,
 					size: 12,
-					opacity: 0.3,
+					opacity: 0.5,
 					font,
 				});
 				page.drawText("自强打印店", {
-					x: (width - Math.sqrt(72 * 5)) / 2,
-					y: (height - Math.sqrt(72 * 5)) / 2,
-					size: 72,
+					x: (width - (5 * 80) / Math.sqrt(2)) / 2,
+					y: (width - 80 / Math.sqrt(2)) / 2,
+					size: 80,
 					opacity: 0.3,
 					rotate: degrees(45),
 					font,

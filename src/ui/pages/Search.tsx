@@ -37,6 +37,7 @@ import classNames from "classnames";
 import DocumentItem from "../components/DocumentItem";
 import { ExportedCallback } from "../../shared/api";
 import { useDatabaseStore } from "../stores/database";
+import { Database } from "../../backend/database";
 
 const ItemList = ({
 	className,
@@ -565,6 +566,12 @@ export default function Search() {
 				// 需要所有标签都被选中
 				return true;
 			return false;
+		});
+		// 然后再根据年份排个序
+		result.sort((a, b) => {
+			if (a.info.date === undefined) return -1;
+			if (b.info.date === undefined) return 1;
+			return b.info.date.year - a.info.date.year;
 		});
 		setData(result);
 		if (calcTime) {

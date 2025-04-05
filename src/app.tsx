@@ -188,6 +188,18 @@ function App() {
 					className={
 						"h-full px-2 bg-black bg-opacity-0 hover:bg-opacity-20 transition"
 					}
+					onClick={() => pageStore.setNow(2)}
+				>
+					<PlaylistAddCheckIcon fontSize={"inherit"} />
+					<div className={"text-xs ml-2 mr-1"}>
+						已勾选 {selectStore.selectedID.length}
+					</div>
+				</ButtonBase>
+				<ButtonBase
+					component={"div"}
+					className={
+						"h-full px-2 bg-black bg-opacity-0 hover:bg-opacity-20 transition ml-auto"
+					}
 					onClick={() => pageStore.setNow(4)}
 				>
 					{databaseStore.status === "pending" && (
@@ -215,18 +227,6 @@ function App() {
 								</div>
 							</>
 						))}
-				</ButtonBase>
-				<ButtonBase
-					component={"div"}
-					className={
-						"h-full px-2 bg-black bg-opacity-0 hover:bg-opacity-20 transition ml-auto"
-					}
-					onClick={() => pageStore.setNow(2)}
-				>
-					<PlaylistAddCheckIcon fontSize={"inherit"} />
-					<div className={"text-xs ml-2 mr-1"}>
-						已勾选 {selectStore.selectedID.length}
-					</div>
 				</ButtonBase>
 			</div>
 			<DialogBase />
