@@ -11,6 +11,9 @@ export interface ISettings {
 		config: {
 			watermark: boolean;
 		};
+		dev: {
+			devTools: boolean;
+		};
 	};
 	window: BrowserWindow; // 主窗口示例
 	font: Buffer; // 字体文件，用于取回试卷时嵌入字体
@@ -24,6 +27,9 @@ export const Config: ISettings = {
 		},
 		config: {
 			watermark: true,
+		},
+		dev: {
+			devTools: false,
 		},
 	},
 	window: null,

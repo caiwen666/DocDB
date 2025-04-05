@@ -42,6 +42,10 @@ const createWindow = (): void => {
 	).then((settings) => {
 		// TODO: 有可能配置文件还没读完渲染进程就调用相关接口了？
 		Config.settings = JSON.parse(settings);
+		// Open the DevTools.
+		if (Config.settings.dev.devTools) {
+			mainWindow.webContents.openDevTools({ mode: "detach" });
+		}
 	});
 	// 清理临时文件
 	if (!fs.existsSync(path.join(process.cwd(), "data", "tmp"))) {
@@ -66,8 +70,6 @@ const createWindow = (): void => {
 	mainWindow.once("ready-to-show", () => {
 		mainWindow.show();
 	});
-	// Open the DevTools.
-	mainWindow.webContents.openDevTools({ mode: "detach" });
 };
 
 app.on("ready", createWindow);

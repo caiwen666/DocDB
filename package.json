@@ -5,7 +5,7 @@
   "main": ".webpack/main",
   "scripts": {
     "start": "electron-forge start",
-    "package": "electron-forge package",
+    "package": "electron-forge package && copy release-template\\font.ttf out\\docdb-win32-x64 && copy release-template\\config.json out\\docdb-win32-x64",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
     "lint": "eslint --ext .ts,.tsx ."
