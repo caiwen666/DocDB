@@ -44,29 +44,14 @@ export const fetchBack = async (
 		);
 		const pdf = await PDFDocument.load(file, { ignoreEncryption: true });
 		const base = doc.document.info.page;
-		if (!doc.double) {
-			// 单面的话先批量插页，插到后面
-			for (let i = 0; i < base; i++) {
-				pdf.addPage();
-			}
-		} else if (base % 2 === 1) {
+		if (doc.double && base % 2 === 1) {
+			// 双面插空白页
 			pdf.addPage();
 		}
 		// 根据份数复制
 		for (let i = 0; i < doc.count; i++) {
 			const copy = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
-			const once = [];
-			if (!doc.double) {
-				//再放到中间来
-				for (let i = 0; i < base; i++) {
-					once.push(copy[i]);
-					once.push(copy[i + base]);
-				}
-			} else {
-				// 直接拷贝过去
-				once.push(...copy);
-			}
-			pages.push(...once);
+			pages.push(...copy);
 		}
 		ok++;
 		send("onFetchBackProgressUpdated", ok, target.length);
@@ -138,10 +123,8 @@ export const fetchBack = async (
 					rotate: degrees(45),
 					font,
 				});
-				if (!doc.double) {
-					// 单面打印
-					p += 2;
-				} else if (
+				if (
+					doc.double &&
 					doc.document.info.page % 2 === 1 &&
 					j == doc.document.info.page - 1
 				) {

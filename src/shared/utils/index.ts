@@ -119,8 +119,7 @@ export const calcMoney = (target: SelectedDocument[]) => {
 		let t = 0;
 		const page = doc.document.info.page;
 		if (doc.double) {
-			t = Math.floor(page / 2) * 0.12;
-			if (page % 2 === 1) t += 0.08;
+			t = Math.ceil(page / 2) * 0.12;
 		} else {
 			t = page * 0.08;
 		}

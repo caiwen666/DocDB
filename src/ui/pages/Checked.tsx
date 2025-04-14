@@ -1,5 +1,6 @@
 import {
 	Button,
+	ButtonBase,
 	Checkbox,
 	Chip,
 	Dialog,
@@ -27,21 +28,22 @@ import { useDialogStore } from "../stores/dialog";
 import Grid from "@mui/material/Grid2";
 import DialogBarProgressTemplate from "../components/dialog/DialogBarProgressTemplate";
 import { invoke } from "../api";
+import Radio from "@mui/material/Radio";
+import RadioGroup from "@mui/material/RadioGroup";
+import FormControlLabel from "@mui/material/FormControlLabel";
 
 const Item = ({
 	selected,
 	onSelect,
 	onChange,
 	formColor,
-	formDouble,
 	formCount,
 	info,
 }: {
 	selected: boolean;
 	onSelect?: () => void;
-	onChange: (color: boolean, double: boolean, count: number) => void;
+	onChange: (color: boolean, count: number) => void;
 	formColor: boolean;
-	formDouble: boolean;
 	formCount: number;
 	info: DocumentInfo;
 }) => {
@@ -52,7 +54,6 @@ const Item = ({
 		else yearFormat += "级";
 	}
 	const [color, setColor] = useState(formColor ? 1 : 0);
-	const [double, setDouble] = useState(formDouble ? 1 : 0);
 	const [count, setCount] = useState(formCount.toString());
 	const [countValid, setCountValid] = useState(true);
 	useEffect(() => {
@@ -62,96 +63,100 @@ const Item = ({
 			validate = false;
 		}
 		setCountValid(validate);
-		if (onChange) onChange(color === 1, double === 1, validate ? num : -1);
-	}, [color, double, count]);
+		if (onChange) onChange(color === 1, validate ? num : -1);
+	}, [color, count]);
 	useEffect(() => {
 		setColor(formColor ? 1 : 0);
-		setDouble(formDouble ? 1 : 0);
 		setCount(formCount.toString());
-	}, [formColor, formDouble, formCount]);
+	}, [formColor, formCount]);
 	return (
 		<div
-			className={classNames("mt-2 rounded select-none p-1 flex", {
-				"bg-primary bg-opacity-20": selected,
-				"bg-white": !selected,
-			})}
+			className={classNames(
+				"mt-2 rounded select-none no-drag transition overflow-hidden",
+				{
+					"bg-primary bg-opacity-20 hover:bg-opacity-30": selected,
+					"bg-white hover:bg-gray-100": !selected,
+				},
+			)}
 		>
-			<div className={"flex-1"}>
-				<div className={"flex items-center"}>
-					<Checkbox size={"small"} onClick={onSelect} checked={selected} />
-					<div className={"ml-1"}>
-						<div className={"text-sm"}>{`${yearFormat} / ${info.name}`}</div>
-						<div className={"text-xs"}>
-							{info.type === 0 ? "期末" : info.type === 1 ? "期中" : "其他"}{" "}
-							<span
-								className={classNames({
-									"text-error": !info.answer,
-									"text-success": info.answer,
-								})}
-							>
-								{info.answer ? "有答案" : "仅试卷"}
-							</span>
-							{info.identifier.length != 0 && " " + info.identifier}
-							<span className={"text-title"}>{` ${info.page}页`}</span>
+			<ButtonBase
+				className={"p-1 block cursor-default"}
+				component={"div"}
+				onClick={onSelect}
+			>
+				<div className={"flex"}>
+					<div className={"flex-1"}>
+						<div className={"flex items-center"}>
+							<Checkbox size={"small"} checked={selected} />
+							<div className={"ml-1"}>
+								<div
+									className={"text-sm"}
+								>{`${yearFormat} / ${info.name}`}</div>
+								<div className={"text-xs"}>
+									{info.type === 0 ? "期末" : info.type === 1 ? "期中" : "其他"}{" "}
+									<span
+										className={classNames({
+											"text-error": !info.answer,
+											"text-success": info.answer,
+										})}
+									>
+										{info.answer ? "有答案" : "仅试卷"}
+									</span>
+									{info.identifier.length != 0 && " " + info.identifier}
+									<span className={"text-title"}>{` ${info.page}页`}</span>
+								</div>
+							</div>
+						</div>
+						<div className={"flex flex-wrap mt-0.5"}>
+							{info.filter.map((tag) => (
+								<Chip
+									key={tag}
+									label={tag}
+									size={"small"}
+									color={"primary"}
+									variant={"outlined"}
+									className={"m-0.5"}
+								/>
+							))}
+							{info.tags.map((tag) => (
+								<Chip
+									key={tag}
+									label={tag}
+									size={"small"}
+									color={"success"}
+									variant={"outlined"}
+									className={"m-0.5"}
+								/>
+							))}
 						</div>
 					</div>
-				</div>
-				<div className={"flex flex-wrap mt-0.5"}>
-					{info.filter.map((tag) => (
-						<Chip
-							key={tag}
-							label={tag}
-							size={"small"}
-							color={"primary"}
-							variant={"outlined"}
-							className={"m-0.5"}
-						/>
-					))}
-					{info.tags.map((tag) => (
-						<Chip
-							key={tag}
-							label={tag}
-							size={"small"}
-							color={"success"}
-							variant={"outlined"}
-							className={"m-0.5"}
-						/>
-					))}
-				</div>
-			</div>
-			<div className={"flex items-center p-1"}>
-				<FormControl variant="standard">
-					<InputLabel>单双面</InputLabel>
-					<Select
-						value={double ? 1 : 0}
-						onChange={() => setDouble((v) => 1 - v)}
-						size={"small"}
+					<div
+						className={"flex items-center p-1"}
+						onClick={(e) => e.stopPropagation()}
 					>
-						<MenuItem value={1}>双面</MenuItem>
-						<MenuItem value={0}>单面</MenuItem>
-					</Select>
-				</FormControl>
-				<FormControl variant="standard" className={"ml-2"}>
-					<InputLabel>颜色</InputLabel>
-					<Select
-						value={color ? 1 : 0}
-						onChange={() => setColor((v) => 1 - v)}
-						size={"small"}
-					>
-						<MenuItem value={1}>彩印</MenuItem>
-						<MenuItem value={0}>黑白</MenuItem>
-					</Select>
-				</FormControl>
-				<TextField
-					label="份数"
-					variant="standard"
-					size={"small"}
-					className={"w-20 ml-2"}
-					value={count}
-					error={!countValid}
-					onChange={(e) => setCount(e.target.value)}
-				/>
-			</div>
+						<FormControl variant="standard" className={"ml-2"}>
+							<InputLabel>颜色</InputLabel>
+							<Select
+								value={color ? 1 : 0}
+								onChange={() => setColor((v) => 1 - v)}
+								size={"small"}
+							>
+								<MenuItem value={1}>彩印</MenuItem>
+								<MenuItem value={0}>黑白</MenuItem>
+							</Select>
+						</FormControl>
+						<TextField
+							label="份数"
+							variant="standard"
+							size={"small"}
+							className={"w-20 ml-2"}
+							value={count}
+							error={!countValid}
+							onChange={(e) => setCount(e.target.value)}
+						/>
+					</div>
+				</div>
+			</ButtonBase>
 		</div>
 	);
 };
@@ -170,13 +175,13 @@ export default function Checked() {
 	const allSelectedRef = useRef(allSelected);
 	const validateMap = useRef<{ [id: number]: boolean }>({});
 	const selectedIndex = useRef<{ [id: number]: number }>({});
+	const [double, setDouble] = useState(true);
+	const doubleRef = useRef(double);
 	const [money, setMoney] = useState("0.00");
 	// 批量编辑
 	const [showEditDialog, setShowEditDialog] = useState(false);
 	const [applyColor, setApplyColor] = useState(-1);
 	const applyColorRef = useRef(applyColor);
-	const [applyDouble, setApplyDouble] = useState(-1);
-	const applyDoubleRef = useRef(applyDouble);
 	const [applyCount, setApplyCount] = useState("1");
 	const applyCountRef = useRef(applyCount);
 	const [applyCountValid, setApplyCountValid] = useState(true);
@@ -187,6 +192,7 @@ export default function Checked() {
 		const colorTarget = [];
 		for (const id of selected) {
 			const item = allSelectedRef.current[selectedIndex.current[id]];
+			item.double = doubleRef.current;
 			if (item.color) colorTarget.push(item);
 			else target.push(item);
 		}
@@ -223,7 +229,10 @@ export default function Checked() {
 						<DialogContent>
 							<DialogContentText>
 								取回成功，请使用<span className={"font-bold"}>黑白</span>
-								打印机，选用A4纸张，<span className={"font-bold"}>双面</span>
+								打印机，选用A4纸张，
+								<span className={"font-bold"}>
+									{doubleRef.current ? "双面" : "单面"}
+								</span>
 								打印。
 							</DialogContentText>
 							{colorTarget.length !== 0 && (
@@ -272,7 +281,10 @@ export default function Checked() {
 						<DialogContent>
 							<DialogContentText>
 								取回成功，请使用<span className={"font-bold"}>彩色</span>
-								打印机，选用A4纸张，<span className={"font-bold"}>双面</span>
+								打印机，选用A4纸张，
+								<span className={"font-bold"}>
+									{doubleRef.current ? "双面" : "单面"}
+								</span>
 								打印。
 							</DialogContentText>
 						</DialogContent>
@@ -328,10 +340,12 @@ export default function Checked() {
 	useEffect(() => {
 		const target = [];
 		for (const id of selected) {
-			target.push(allSelectedRef.current[selectedIndex.current[id]]);
+			const item = allSelectedRef.current[selectedIndex.current[id]];
+			item.double = doubleRef.current;
+			target.push(item);
 		}
 		setMoney(calcMoney(target));
-	}, [selected, allSelected]);
+	}, [selected, allSelected, double]);
 	return (
 		<div>
 			<div>
@@ -398,18 +412,49 @@ export default function Checked() {
 						disabled={selected.length === 0}
 						onClick={() => {
 							setApplyCount("");
-							setApplyDouble(-1);
 							setApplyColor(-1);
 							setApplyCountValid(true);
 							applyCountValidRef.current = true;
 							applyCountRef.current = "";
 							applyColorRef.current = -1;
-							applyDoubleRef.current = -1;
 							setShowEditDialog(true);
 						}}
 					>
 						批量编辑
 					</Button>
+					<FormControl className={"ml-4"}>
+						<RadioGroup row>
+							<FormControlLabel
+								control={
+									<Radio
+										size={"small"}
+										disabled={selected.length === 0}
+										checked={double}
+										onClick={() => {
+											doubleRef.current = true;
+											setDouble(doubleRef.current);
+										}}
+									/>
+								}
+								label={<div className={"text-xs self-center"}>双面</div>}
+							/>
+							<FormControlLabel
+								className={"-ml-1.5"}
+								control={
+									<Radio
+										size={"small"}
+										disabled={selected.length === 0}
+										checked={!double}
+										onClick={() => {
+											doubleRef.current = false;
+											setDouble(doubleRef.current);
+										}}
+									/>
+								}
+								label={<div className={"text-xs self-center"}>单面</div>}
+							/>
+						</RadioGroup>
+					</FormControl>
 				</div>
 				{allSelected.map((item) => {
 					const id = item.document.id;
@@ -420,13 +465,10 @@ export default function Checked() {
 							selected={selected.includes(id)}
 							info={item.document.info}
 							formColor={item.color}
-							formDouble={item.double}
 							formCount={item.count}
-							onChange={(color, double, count) => {
+							onChange={(color, count) => {
 								validateMap.current[id] = count !== -1;
 								allSelectedRef.current[selectedIndex.current[id]].color = color;
-								allSelectedRef.current[selectedIndex.current[id]].double =
-									double;
 								allSelectedRef.current[selectedIndex.current[id]].count =
 									count === -1 ? 1 : count;
 								setAllSelected([...allSelectedRef.current]);
@@ -444,28 +486,11 @@ export default function Checked() {
 					);
 				})}
 			</div>
-			<Dialog open={showEditDialog} fullWidth>
+			<Dialog open={showEditDialog}>
 				<DialogTitle>批量编辑</DialogTitle>
 				<DialogContent>
 					<Grid container spacing={1}>
-						<Grid size={4}>
-							<FormControl variant="standard" fullWidth>
-								<InputLabel>单双面</InputLabel>
-								<Select
-									value={applyDouble}
-									onChange={(e) => {
-										applyDoubleRef.current = e.target.value as number;
-										setApplyDouble(applyDoubleRef.current);
-									}}
-									size={"small"}
-								>
-									<MenuItem value={-1}>不更改</MenuItem>
-									<MenuItem value={1}>双面</MenuItem>
-									<MenuItem value={0}>单面</MenuItem>
-								</Select>
-							</FormControl>
-						</Grid>
-						<Grid size={4}>
+						<Grid size={6}>
 							<FormControl variant="standard" fullWidth>
 								<InputLabel>颜色</InputLabel>
 								<Select
@@ -482,7 +507,7 @@ export default function Checked() {
 								</Select>
 							</FormControl>
 						</Grid>
-						<Grid size={4}>
+						<Grid size={6}>
 							<TextField
 								fullWidth
 								label="份数"
@@ -517,10 +542,6 @@ export default function Checked() {
 							if (!applyCountValidRef.current) return;
 							for (const id of selectedRef.current) {
 								const index = selectedIndex.current[id];
-								if (applyDoubleRef.current !== -1) {
-									allSelectedRef.current[index].double =
-										applyDoubleRef.current === 1;
-								}
 								if (applyColorRef.current !== -1) {
 									allSelectedRef.current[index].color =
 										applyColorRef.current === 1;
